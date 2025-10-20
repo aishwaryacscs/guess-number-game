@@ -9,7 +9,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/aishwaryacscs/guess-number-game.git'
+                // Specify the correct branch 'main'
+                git branch: 'main', url: 'https://github.com/aishwaryacscs/guess-number-game.git'
             }
         }
 
@@ -47,3 +48,4 @@ pipeline {
         }
     }
 }
+
