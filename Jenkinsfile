@@ -2,64 +2,50 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "guess-number-game"
+        IMAGE_NAME = "guess-number-game:latest"
         CONTAINER_NAME = "guess-number-app"
         HOST_PORT = "9090"
         CONTAINER_PORT = "3000"
     }
 
     stages {
-        stage('Checkout') {
+
+        // 1️⃣ Checkout code from GitHub
+        stage('Checkout SCM') {
             steps {
                 git branch: 'main', url: 'https://github.com/aishwaryacscs/guess-number-game.git'
             }
         }
 
+        // 2️⃣ Build Docker image
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${IMAGE_NAME}:latest ."
-                }
+                sh "docker build -t ${IMAGE_NAME} ."
             }
         }
 
-        stage('Stop & Remove Old Container') {
+        // 3️⃣ Stop existing container if running
+        stage('Stop Existing Container') {
             steps {
-                script {
-                    sh "docker rm -f ${CONTAINER_NAME} || true"
-                }
+                sh "docker rm -f ${CONTAINER_NAME} || true"
             }
         }
 
+        // 4️⃣ Run the container
         stage('Run Container') {
             steps {
-                script {
-                    sh """
-                        docker run -d \
-                        -p ${HOST_PORT}:${CONTAINER_PORT} \
-                        --name ${CONTAINER_NAME} \
-                        ${IMAGE_NAME}:latest
-                    """
-                }
-            }
-        }
-
-        stage('Verify') {
-            steps {
-                script {
-                    sh "docker ps"
-                    echo "Your app should be accessible at: http://<EC2-IP>:${HOST_PORT}"
-                }
+                sh "docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}"
             }
         }
     }
 
+    // 5️⃣ Post actions
     post {
-        failure {
-            echo "❌ Pipeline failed! Check logs for details."
-        }
         success {
-            echo "✅ Pipeline completed successfully!"
+            echo "✅ Pipeline completed! Access your app at: http://3.133.91.86:${HOST_PORT}"
+        }
+        failure {
+            echo "❌ Pipeline failed!"
         }
     }
 }
