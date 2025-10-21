@@ -2,11 +2,10 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'guess-number-game:latest'
-        CONTAINER_NAME = 'guess-number-app'
-        HOST_PORT = '9090'
-        CONTAINER_PORT = '3000'
-        EC2_IP = '3.133.91.86'
+        IMAGE_NAME = "guess-number-game"
+        CONTAINER_NAME = "guess-number-app"
+        HOST_PORT = "9090"
+        CONTAINER_PORT = "3000"
     }
 
     stages {
@@ -18,30 +17,49 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME} ."
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:latest ."
+                }
             }
         }
 
-        stage('Stop Existing Container') {
+        stage('Stop & Remove Old Container') {
             steps {
-                sh "docker rm -f ${CONTAINER_NAME} || true"
+                script {
+                    sh "docker rm -f ${CONTAINER_NAME} || true"
+                }
             }
         }
 
         stage('Run Container') {
             steps {
-                sh "docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}"
+                script {
+                    sh """
+                        docker run -d \
+                        -p ${HOST_PORT}:${CONTAINER_PORT} \
+                        --name ${CONTAINER_NAME} \
+                        ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                script {
+                    sh "docker ps"
+                    echo "Your app should be accessible at: http://<EC2-IP>:${HOST_PORT}"
+                }
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Pipeline succeeded! Access your app at http://${EC2_IP}:${HOST_PORT}"
-        }
         failure {
-            echo "❌ Pipeline failed!"
+            echo "❌ Pipeline failed! Check logs for details."
+        }
+        success {
+            echo "✅ Pipeline completed successfully!"
         }
     }
 }
-
